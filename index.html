@@ -2,27 +2,103 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Reasons I’d Kiss You</title>
-  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Reasons I’d Kiss You - Infinite Scroll + Hearts</title>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500&display=swap" rel="stylesheet" />
   <style>
+    /* Background & base styles */
+    * {
+      box-sizing: border-box;
+    }
     html, body {
-      margin: 0;
-      padding: 0;
+      margin: 0; padding: 0;
       background: #121212;
       color: #ffe3ec;
       font-family: 'Quicksand', sans-serif;
       height: 100%;
+      overflow-y: scroll;
+      -webkit-overflow-scrolling: touch;
+      position: relative;
       overflow-x: hidden;
     }
-
     h1 {
       color: #ff8fab;
       text-align: center;
       margin: 40px 20px 20px;
       font-size: 2rem;
+      position: relative;
+      z-index: 10;
     }
 
+    /* Hearts container */
+    .hearts {
+      pointer-events: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      z-index: 0;
+    }
+
+    /* Single heart style */
+    .heart {
+      position: absolute;
+      width: 20px;
+      height: 18px;
+      background: red;
+      opacity: 0.6;
+      filter: drop-shadow(0 0 6px red);
+      transform-origin: center bottom;
+      animation-timing-function: ease-in-out;
+      animation-iteration-count: infinite;
+      animation-direction: alternate;
+      clip-path: polygon(
+        50% 0%, 61% 10%, 70% 20%, 75% 30%, 75% 40%, 70% 50%,
+        60% 60%, 50% 70%, 40% 60%, 30% 50%, 25% 40%, 25% 30%,
+        30% 20%, 39% 10%
+      );
+    }
+
+    /* Glow animation */
+    @keyframes glowPulse {
+      0%, 100% {
+        filter: drop-shadow(0 0 6px red);
+        opacity: 0.6;
+        transform: scale(1);
+      }
+      50% {
+        filter: drop-shadow(0 0 14px #ff4d4d);
+        opacity: 1;
+        transform: scale(1.2);
+      }
+    }
+
+    /* Float up and sideways */
+    @keyframes floatUp {
+      0% {
+        transform: translateY(100vh) translateX(0) scale(1);
+        opacity: 0.7;
+      }
+      100% {
+        transform: translateY(-20vh) translateX(20px) scale(1.3);
+        opacity: 0;
+      }
+    }
+
+    /* Fade-in animation for reasons */
+    @keyframes fadeInUp {
+      0% {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Reason style */
     .reason {
       background: rgba(255, 143, 171, 0.08);
       border-left: 4px solid #ff8fab;
@@ -33,24 +109,23 @@
       border-radius: 10px;
       font-size: 1.3rem;
       box-shadow: 0 2px 10px rgba(255, 143, 171, 0.2);
-    }
-
-    #loading {
-      text-align: center;
-      font-size: 1rem;
-      color: #888;
-      margin: 30px 0 80px;
+      animation: fadeInUp 0.8s ease forwards;
+      opacity: 0;
     }
   </style>
 </head>
 <body>
 
-  <h1>Reasons I’d Kiss You 😘</h1>
+  <h1>Reasons I’d Kiss You Jiji</h1>
   <div id="reasons-container"></div>
   <div id="loading">Loading more reasons...</div>
 
+  <div class="hearts" id="hearts-container"></div>
+
   <script>
-    const reasons = ["The world stops when you're the warmth in my favorite memory.",
+    // Your reasons list here
+    const reasons = [
+      "The world stops when you're the warmth in my favorite memory.",
        "Because your smile makes my knees weak.",
        "Can’t resist kissing you because you love me at my worst.",
        "you’re poetry in motion. 😍",
@@ -92,38 +167,80 @@
   "Because your soul knows mine.",
   "You’re the kind of beautiful that doesn’t need makeup.",
   "One reason: you’re the gravity holding my heart down.",
-  "I'd kiss you because I’ve run out of reasons *not to.*"]; // Fill this array with your reasons later
+  "I'd kiss you because I’ve run out of reasons *not to.*"
+    ];
 
     const container = document.getElementById("reasons-container");
+    const loading = document.getElementById("loading");
     let index = 0;
     const batchSize = 5;
 
+    // Load reasons infinitely by looping
     function loadMoreReasons() {
-      if (index >= reasons.length) return;
-      const end = Math.min(index + batchSize, reasons.length);
-      for (let i = index; i < end; i++) {
+      for (let i = 0; i < batchSize; i++) {
+        const reason = reasons[index % reasons.length];
         const div = document.createElement("div");
         div.className = "reason";
-        div.textContent = reasons[i];
+
+        // To trigger fade-in each time we add, force reflow:
+        div.style.opacity = '0';
+        div.textContent = reason;
         container.appendChild(div);
+
+        // Force reflow then add animation class (to retrigger animation)
+        void div.offsetWidth;
+        div.style.opacity = '1';
+        div.style.animation = 'fadeInUp 0.8s ease forwards';
+
+        index++;
       }
-      index = end;
     }
 
     function handleScroll() {
-      const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
-      if (scrollTop + clientHeight >= scrollHeight - 100) {
+      const scrollPos = window.innerHeight + window.scrollY;
+      const bottom = document.body.offsetHeight - 100;
+      if (scrollPos >= bottom) {
         loadMoreReasons();
       }
     }
 
-    // Load on scroll
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("touchmove", handleScroll, { passive: true });
 
-    // Load initial
-    window.addEventListener("DOMContentLoaded", () => {
+    document.addEventListener("DOMContentLoaded", () => {
       loadMoreReasons();
+      createHearts(20);
+    });
+
+    // Create floating glowing hearts in the background
+    function createHearts(num) {
+      const heartsContainer = document.getElementById('hearts-container');
+      const screenWidth = window.innerWidth;
+      const screenHeight = window.innerHeight;
+
+      for (let i = 0; i < num; i++) {
+        const heart = document.createElement('div');
+        heart.classList.add('heart');
+
+        // Random initial position (x anywhere across width, y below screen)
+        const x = Math.random() * screenWidth;
+        const delay = Math.random() * 10; // stagger animations
+
+        heart.style.left = `${x}px`;
+        heart.style.bottom = `-30px`;
+        heart.style.animation = `floatUp 10s linear ${delay}s infinite, glowPulse 2s ease-in-out ${delay}s infinite alternate`;
+
+        heartsContainer.appendChild(heart);
+      }
+    }
+
+    // Optional: Recreate hearts on resize (to cover screen)
+    window.addEventListener('resize', () => {
+      const heartsContainer = document.getElementById('hearts-container');
+      heartsContainer.innerHTML = '';
+      createHearts(20);
     });
   </script>
+
 </body>
 </html>
